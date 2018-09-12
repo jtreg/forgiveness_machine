@@ -25,6 +25,15 @@ Credits:
  https://pypi.org/project/python-osc/
  and
  https://github.com/SkoltechRobotics/rplidar
+N.B.
+__________________________________________________________
+Please note that the overall programming style has avoided
+iteration over tuples, lists etc in order to optimise
+speed in executing the commands to the servosself.
+The use of repetitive explicit commands is used instead
+- this gives a very lengthy size to this code baseself.
+----------------------------------------------------------
+
 '''
 
 from __future__ import division
@@ -43,11 +52,6 @@ import sys
 # Uncomment to enable debug output.
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
-
-process_id = str(os.getpid())
-with open("displayservosPID", "w") as f:
-    f.write(process_id)
-
 
 # Initialise the PCA9685 using the default address (0x40).
 pwm1 = Adafruit_PCA9685.PCA9685(address=0x40, busnum=1)
@@ -76,10 +80,6 @@ ROSES=([0,2,8,14,15,17,19,27,33,34])
 CONTINUOUS=([30,9,19,21,34,36,29,4,3,10,12,13,20,22,26,28])
 NO=([28,5,8,23,35,0,6])
 
-BEATING_HEART=0
-JOSETTE_PUMP=48
-overall_delay=0
-
 #device_types:
 ANEMONE=1
 BANDAGE=2
@@ -107,19 +107,19 @@ servo_min = 170  # Min pulse length out of 4096
 servo_max = 550  # Max pulse length out of 4096
 
 #DEFAULT_RUNNING_TIME this is the period that any movement routine repeats itself
-# in this design pattern each movement function should not run indefinityly 
+# in this design pattern each movement function should not run indefinityly
 # so this default will kick in to run n times accorfing to the enum below.
 # the movement functions will accept a parameter to override this default if required.
 DEFAULT_RUNNING_TIME = 2
 
 
 # used in testing and setting up
-LIDAR_RECEIVE=1
+LIDAR_RECEIVE=0
 SERVOS_ON = 1
 DEBUG_MODE=0
 IP ="10.10.10.1"
 PORT_NO=5006
-CHANNELS_ON_CARD=16 			
+CHANNELS_ON_CARD=16
 DISTANCE_MAX_SENSED = 5000
 SERVO_ON=1
 PUMP_ON=1
@@ -130,7 +130,6 @@ now = time.time()
 #State
 BUSY=0
 
-dieat = int(time.time())
 
 def lonelyRoutine():
     # nothing happening, no one picked up on lidar
@@ -145,7 +144,7 @@ def hello():
 def stopAllServos():
 	for i in range(0,45):
 		actuateServoFromNum(i, 0)
-	
+
 
 def setDefaultFrequency():
 	# Set frequency to 60hz, good for servos.
@@ -184,7 +183,7 @@ def workPump(power, duration, freq, intensity, runfor=DEFAULT_RUNNING_TIME):
             #except Exception as e: print(e)
             runfor = runfor -1
     BUSY=0
-    
+
 def valMap(value, istart, istop, ostart, ostop):
     retVal = ostart + (ostop -ostart) * ((value - istart)/ (istop -istart))
     return int(retVal)
@@ -195,19 +194,19 @@ def valMap(value, istart, istop, ostart, ostop):
 def actuateServoFromNum(num, stopAt, runfor=DEFAULT_RUNNING_TIME):
 
     if SERVO_ON == 0:
-        
+
         return
     else:
         try:
-            
+
             #print(" actuating device ... " , num)
             if num >= 0 and num < CHANNELS_ON_CARD and runfor > 0:
                 #-----------------------------------------------
                 # arguments:
                 # 1.) channel number
-                # 2.) on: the tick between 0 and 4095 when the 
+                # 2.) on: the tick between 0 and 4095 when the
                 #     signal should transition fromn low to high.
-                # 3.) off: the tiick between 0 and 4095 when the 
+                # 3.) off: the tiick between 0 and 4095 when the
                 #     signal should transition fromn high to low.
                 #------------------------------------------------
                 val = num
@@ -216,7 +215,7 @@ def actuateServoFromNum(num, stopAt, runfor=DEFAULT_RUNNING_TIME):
                 while runfor > 0:
                     pwm1.set_pwm(num, 0, stopAt)
                     runfor = runfor -1
-                    
+
             elif  num >= CHANNELS_ON_CARD and num < CHANNELS_ON_CARD * 2 and runfor > 0:
                 val = num-CHANNELS_ON_CARD
                 if DEBUG_MODE:
@@ -257,7 +256,7 @@ def actuateServoFromNum(num, stopAt, runfor=DEFAULT_RUNNING_TIME):
                     runfor = runfor -1
             if DEBUG_MODE:
                 print(num, val)
-            
+
         except Exception as e : print(e)
 
 
@@ -276,7 +275,7 @@ def startContinuousServos():
 def stopContinuousServos():
     for i in CONTINUOUS:
         stopOne(i)
-        
+
 
 '''
 Coordinates the movement of groups of servos
@@ -287,7 +286,7 @@ def choregraphyActioByTypeOfObject(groupOf, delay, stopAt):
         if DEBUG_MODE:
             print("actuating CRUCIFIXES")
         moveByGroupType(CRUCIFIXES, delay, stopAt)
-        
+
     elif groupOf==DOGPOO:
         if DEBUG_MODE:
             print("actuating DOGPOOS")
@@ -368,7 +367,7 @@ def handlerfunction(a, an,di):
 
     DURATION_PUMP = 2.2
     FREQ = 1
-    # default for mapping of pump power 
+    # default for mapping of pump power
     INTENSITY = 850
     #but we could hook up to the lidar data for this!
 
@@ -380,21 +379,15 @@ def handlerfunction(a, an,di):
     OK = 3000
     FAR = 4000
     VERY_FAR = 5000
-    #while  dieat+5.0 -  time.time() > 0:
 
 
     try:
-        #if not int(dieat+5.0 -  int(time.time())) > 0:
-        ##    print("running", int(dieat+5.0 -  time.time()))
-        ##else:
-            #raise SystemExit
-            #os._exit(1)
-            ##quit()
-        
+
+
         # busy now;someone is out there!
         # set this state to ....
         BUSY = 1
-        
+
         if di < DISTANCE_MAX_SENSED and an > 0 and an < 30:
             '''
             VERY_CLOSE = 100
@@ -420,11 +413,11 @@ def handlerfunction(a, an,di):
             elif  di < VERY_FAR  and  di > FAR:
                 workPump(di+10, DURATION_PUMP, FREQ, an,2)
                 vibrateCrucifixes()
-         
-            
+
+
             workPump(an+10,DURATION_PUMP, FREQ, an)
             finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 60 and an < 90:
             if DEBUG_MODE:
                 print(" 60 - 90 " , an, " di ", di)
@@ -446,27 +439,32 @@ def handlerfunction(a, an,di):
             #	time.sleep(0.1)
             #	actuateServoFromNum(i, servo_max))
             finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 90 and an < 120:
             if DEBUG_MODE:
                 print(" 90 - 120 " )
             if  di < VERY_CLOSE:
                 print(">= 90 and an < 120" )
+                workPump(an+320,DURATION_PUMP, FREQ, an)
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 60 and an < 90")
+                workPump(an+220,DURATION_PUMP, FREQ, an)
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print(">= 90 and an < 120" )
+                workPump(an+120,DURATION_PUMP, FREQ, an)
             elif di < OK:
                 print(">= 90 and an < 120" )
+                doNorthWest()
             elif  di < FAR  and  di > OK:
                 print(">= 90 and an < 120" )
+                doNorthEast()
             elif  di < VERY_FAR  and  di > FAR:
                 #stopEverything()
                 vibrateRoses(0)
                 vibrateBoxes()
                 workPump(an+20,DURATION_PUMP, FREQ, an)
             finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 120 and an < 150:
             if DEBUG_MODE:
                 print(" 120 - 150 " )
@@ -489,7 +487,7 @@ def handlerfunction(a, an,di):
                 workPump(an+20,DURATION_PUMP, FREQ, an)
                 #moveByGroupType(CRUCIFIXES, 2)
             finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 150 and an < 180:
             if DEBUG_MODE:
                 print(" 1500 - 180 " )
@@ -500,43 +498,50 @@ def handlerfunction(a, an,di):
                 vibrateCrucifixes(5)
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print("an >= 150 and an < 180" )
+                workPump(an+40,DURATION_PUMP, FREQ, an)
             elif di < OK:
                 print("an >= 150 and an < 180" )
             elif  di < FAR  and  di > OK:
+                workPump(an+20,DURATION_PUMP, FREQ, an)
                 print("an >= 150 and an < 180" )
             elif  di < VERY_FAR  and  di > FAR:
                 print("an >= 150 and an < 180" )
-                #workPump(0,DURATION_PUMP, FREQ, an)
+                workPump(0,DURATION_PUMP, FREQ, an)
                 finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 180 and an < 210:
             if DEBUG_MODE:
                 print(" 180 - 210 " )
             if  di < VERY_CLOSE:
                 stopEverything()
-                workPump(an+20,DURATION_PUMP, FREQ, an)
+                workPump(an+420,DURATION_PUMP, FREQ, an)
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print(">= 180 and an < 210" )
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print(">= 180 and an < 210" )
+                workPump(an+320,DURATION_PUMP, FREQ, an)
             elif di < OK:
                 print(">= 180 and an < 210" )
+                workPump(an+120,DURATION_PUMP, FREQ, an)
             elif  di < FAR  and  di > OK:
                 print(">= 180 and an < 210" )
+                workPump(an+20,DURATION_PUMP, FREQ, an)
             elif  di < VERY_FAR  and  di > FAR:
                 #stopEverything()
                 vibrateBulb(3)
                 stopOne(PUMP_WIRE_NO)
                 finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 210 and an < 240:
             if DEBUG_MODE:
                 print(" 210 - 240 " )
             if  di < VERY_CLOSE:
+                vibrateCrucifixes(1)
                 workPump(an+20,DURATION_PUMP, FREQ, an)
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 210 and an < 240" )
             elif  di < VERY_NEAR  and  di > CLOSE:
+                vibrateCrucifixes(0.1)
                 print("an >= 210 and an < 240" )
             elif di < OK:
                 print("an >= 210 and an < 240" )
@@ -546,32 +551,40 @@ def handlerfunction(a, an,di):
                 doNorthWest()
                 workPump(an+20,DURATION_PUMP, FREQ, an)
                 finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 240 and an < 270:
             if  di < VERY_CLOSE:
-                workPump(an+20,DURATION_PUMP, FREQ, an)
+                workPump(an+120,DURATION_PUMP, FREQ, an)
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 240 and an < 270" )
+                vibrateAnemones()
+                vibrateBoxes()
+                vibrateCrucifixes()
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print("an >= 240 and an < 270" )
             elif di < OK:
                 print("an >= 240 and an < 270" )
+                vibrateAnemones()
+                vibrateBoxes()
             elif  di < FAR  and  di > OK:
                 print("an >= 240 and an < 270" )
+                vibrateBoxes(1)
             elif  di < VERY_FAR  and  di > FAR:
 
                 stopContinuousServos()
                 doNorthEast()
                 stopOne(PUMP_WIRE_NO)
                 finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 270 and an < 300:
             if  di < VERY_CLOSE:
                 workPump(an+20,DURATION_PUMP, FREQ, an)
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 270 and an < 300" )
+                vibrateDogPoos()
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print("an >= 270 and an < 300" )
+                vibrateDogPoos()
             elif di < OK:
                 print("an >= 270 and an < 300" )
             elif  di < FAR  and  di > OK:
@@ -583,20 +596,24 @@ def handlerfunction(a, an,di):
                 #workPump(di+2000, DURATION_PUMP, FREQ,INTENSITY)
                 #time.sleep(26)
                 finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 300 and an < 330:
             if DEBUG_MODE:
                 print(" 300 - 330 " )
             if  di < VERY_CLOSE:
                 print("an >= 300 and an < 330" )
+                vibrateRoses()
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 300 and an < 330" )
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print("an >= 300 and an < 330" )
+                vibrateCrucifixes()
+                vibrateRoses()
             elif di < OK:
                 print("an >= 300 and an < 330" )
             elif  di < FAR  and  di > OK:
                 print("an >= 300 and an < 330" )
+                workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
             elif  di < VERY_FAR  and  di > FAR:
                 stopContinuousServos()
                 doSouthWest()
@@ -604,31 +621,39 @@ def handlerfunction(a, an,di):
             #workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
             #time.sleep(20)
             finishedRoutineCleanUp()
-            
+
         elif di < DISTANCE_MAX_SENSED and an >= 330 and an < 360:
             if DEBUG_MODE:
                 print("30 - 360 " )
             if  di < VERY_CLOSE:
                 print("an >= 300 and an < 330" )
+                vibrateAnemones()
+                vibrateBoxes()
+                vibrateRoses()
             elif  di < CLOSE  and  di > VERY_CLOSE:
                 print("an >= 300 and an < 330" )
+                vibrateAnemones()
+                vibrateBoxes()
             elif  di < VERY_NEAR  and  di > CLOSE:
                 print("an >= 300 and an < 330" )
+                vibrateAnemones()
+
             elif di < OK:
                 print("an >= 300 and an < 330" )
+                workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
             elif  di < FAR  and  di > OK:
                 print("an >= 300 and an < 330" )
             elif  di < VERY_FAR  and  di > FAR:
                 stopContinuousServos()
                 vibrateRoses(0)
                 vibrateCrucifixes(1)
-            
+
                 stopOne(PUMP_WIRE_NO)
             finishedRoutineCleanUp()
-        
-            
+
+
     except Exception as e : print(e)
-    except SystemExit: 
+    except SystemExit:
         os._exit(1)
 
 
@@ -755,7 +780,7 @@ def pulseEverything():
         actuateServoFromNum(37, myMax)
         actuateServoFromNum(38, myMax)
         actuateServoFromNum(39, myMax)
-            
+
         #for i in range(0 ,0):
         #	actuateServoFromNum(i, servo_max)
         #	print("reversing ", i)
@@ -764,7 +789,7 @@ def pulseEverything():
         stopEverything shuts off all devices, called when the program sends
         '''
     except Exception as e: print(e)
-    
+
 def stopEverythingWithDisplay():
     try:
         print("stoppping")
@@ -866,10 +891,10 @@ def stopEverything():
             stopContinuousServos()
             BUSY = 0
     except Exception as e: print(e)
-    
+
 def stopOne(num):
     try:
-        
+
         if DEBUG_MODE:
             print ("in stopOne; stopping ", num)
         BUSY = 1
@@ -877,15 +902,15 @@ def stopOne(num):
         time.sleep(0)
         BUSY = 0
     except Exception as e: print(e)
-    
+
 
 # Helper function to make setting a servo pulse width simpler.
 def set_servo_pulse(channel, pulse):
     try:
-        
+
         pulse_length = 1000000    # 1,000,000 us per second
         pulse_length //= 60       # 60 Hz
-        
+
         print('{0}us per period'.format(pulse_length))
         pulse_length //= 4096     # 12 bits of resolution
         print('{0}us per bit'.format(pulse_length))
@@ -897,7 +922,7 @@ def set_servo_pulse(channel, pulse):
         pwm4.set_pwm(channel, 0, pulse)
         pwm5.set_pwm(channel, 0, pulse)
         pwm6.set_pwm(channel, 0, pulse)
-    except Exception as e: print(e)     
+    except Exception as e: print(e)
     '''
     ANEMONES=([11,16,18,26,30])
     BANDAGES=([20,24])
@@ -926,7 +951,7 @@ def vibrateAnemones(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             time.sleep(sleepdelay)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def vibrateDogPoos(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
@@ -942,7 +967,7 @@ def vibrateDogPoos(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             time.sleep(sleepdelay)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def vibrateBoxes(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
@@ -962,7 +987,7 @@ def vibrateBoxes(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             time.sleep(sleepdelay)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def vibrateBulb(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
@@ -974,11 +999,11 @@ def vibrateBulb(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             time.sleep(sleepdelay)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def vibrateCrucifixes(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
-            actuateServoFromNum(3, servo_max)   
+            actuateServoFromNum(3, servo_max)
             actuateServoFromNum(10, servo_max)
             actuateServoFromNum(12, servo_max)
             actuateServoFromNum(13, servo_max)
@@ -999,7 +1024,7 @@ def vibrateCrucifixes(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
 
 def vibrateRoses(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
     try:
-        
+
         while runfor > 0:
             actuateServoFromNum(0, servo_max)
             actuateServoFromNum(2, servo_max)
@@ -1011,7 +1036,7 @@ def vibrateRoses(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(27, servo_max)
             actuateServoFromNum(33, servo_max)
             actuateServoFromNum(34, servo_max)
-            time.sleep(sleepdelay)	
+            time.sleep(sleepdelay)
             actuateServoFromNum(0, servo_min)
             actuateServoFromNum(2, servo_min)
             actuateServoFromNum(8, servo_min)
@@ -1025,15 +1050,15 @@ def vibrateRoses(sleepdelay=0.1, runfor=DEFAULT_RUNNING_TIME):
             time.sleep(sleepdelay)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
-    
+
+
 def CrucifixesThenRoses():
     try:
         #vibrateCrucifixes()
         time.sleep(3)
         vibrateRoses()
     except Exception as e: print(e)
-        
+
 def doNorthWest(runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
@@ -1046,7 +1071,7 @@ def doNorthWest(runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(21, servo_max)
             actuateServoFromNum(26, servo_max)
             actuateServoFromNum(4, servo_max)
-            time.sleep(0.1)	
+            time.sleep(0.1)
             actuateServoFromNum(5, servo_min)
             actuateServoFromNum(6, servo_min)
             actuateServoFromNum(12, servo_min)
@@ -1058,7 +1083,7 @@ def doNorthWest(runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(4, servo_min)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def doNorthEast(runfor=DEFAULT_RUNNING_TIME):
 #NE=([7,17,23,9])
     try:
@@ -1067,14 +1092,14 @@ def doNorthEast(runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(17, servo_max)
             actuateServoFromNum(23, servo_max)
             actuateServoFromNum(9, servo_max)
-            time.sleep(0.1)	
+            time.sleep(0.1)
             actuateServoFromNum(7, servo_min)
             actuateServoFromNum(17, servo_min)
             actuateServoFromNum(23, servo_min)
             actuateServoFromNum(9, servo_min)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def doSouthEast(runfor=DEFAULT_RUNNING_TIME):
 #SE=([34,18,13,1,29,32,20,19,9,2])
     try:
@@ -1102,7 +1127,7 @@ def doSouthEast(runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(2, servo_min)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def doSouthWest(runfor=DEFAULT_RUNNING_TIME):
 #SW=([11,20,31,3,14,25,36,10])
     try:
@@ -1127,11 +1152,11 @@ def doSouthWest(runfor=DEFAULT_RUNNING_TIME):
             actuateServoFromNum(19, servo_min)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 def periodicPumpAction(runfor=DEFAULT_RUNNING_TIME):
     try:
         while runfor > 0:
-            for i in range (1000, 2000,250): 
+            for i in range (1000, 2000,250):
                 workPump(i,2.2,1,1000)
                 if i == 1000:
                     workPump(0,2.2,1,1000)
@@ -1139,7 +1164,7 @@ def periodicPumpAction(runfor=DEFAULT_RUNNING_TIME):
                     workPump(1,2.2,1,1000)
             runfor=runfor-1;
     except Exception as e: print(e)
-    
+
 # Todo:
 # ===============
 # Spirals around bin?
@@ -1162,16 +1187,16 @@ def periodicPumpAction(runfor=DEFAULT_RUNNING_TIME):
 def attractAttentionGuys():
     try:
         ATTRACTIONMODE=1
-        for i in range (1000, 2000,250): 
+        for i in range (1000, 2000,250):
                 workPump(i,2.2,1,1000)
-                
+
                 if i == 1000:
                     workPump(0,2.2,1,1000)
                     time.sleep(2)
                     workPump(1,2.2,1,1000)
         ATTRACTIONMODE=0
     except Exception as e: print(e)
-    
+
 def testx(num):
     try:
         pwm2.set_pwm(num, 0, 170)
@@ -1196,7 +1221,339 @@ def testx(num):
             print('180 degrees')
         time.sleep(2)
     except Exception as e: print(e)
-    
+
+
+def offlineRoutine(an,di):
+    # Description:
+    # ------------
+    # Will receive message data unpacked in angle and distance
+    # first argument is the name of the message (label)
+    # second is angle
+    # third is distance
+    # this is the basic mode
+    #distribututeActionByQuadrant(an, servo_min)
+    #print(a, " an " , an, " di ", di)
+    #time.sleep(0.1)
+    #distribututeActionByQuadrant(an, servo_max)
+
+    DURATION_PUMP = 2.2
+    FREQ = 1
+    # default for mapping of pump power
+    INTENSITY = 850
+    #but we could hook up to the lidar data for this!
+
+
+    #DISTANCES
+    VERY_CLOSE = 100
+    CLOSE = 1500
+    VERY_NEAR = 2000
+    OK = 3000
+    FAR = 4000
+    VERY_FAR = 5000
+
+
+    try:
+
+
+        # busy now;someone is out there!
+        # set this state to ....
+        BUSY = 1
+
+        if di < DISTANCE_MAX_SENSED and an > 0 and an < 30:
+            '''
+            VERY_CLOSE = 100
+            CLOSE = 1500
+            VERY_NEAR = 2000
+            OK = 3000
+            FAR = 4000
+            VERY_FAR = 5000
+
+            '''
+            print(" 0-30 " , an, " di ", di)
+            if  di < VERY_CLOSE:
+                workPump(an*100,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                vibrateRoses(3)
+                vibrateBulb(1)
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                workPump(an*100,DURATION_PUMP, FREQ, an)
+                vibrateRoses(0)
+                vibrateDogPoos()
+            elif di < OK:
+                workPump(an*100,DURATION_PUMP, FREQ, an)
+                vibrateBoxes()
+                vibrateRoses(11)
+                workPump(an*100,DURATION_PUMP, FREQ, an)
+                vibrateBoxes()
+            elif  di < FAR  and  di > OK:
+                workPump(an*100,DURATION_PUMP, FREQ, an)
+                vibrateRoses(0)
+            elif  di < VERY_FAR  and  di > FAR:
+                workPump(an*10, DURATION_PUMP, FREQ, an,2)
+                vibrateCrucifixes()
+
+
+            workPump(an+10,DURATION_PUMP, FREQ, an)
+            finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 60 and an < 90:
+            if DEBUG_MODE:
+                print(" 60 - 90 " , an, " di ", di)
+            if  di < VERY_CLOSE:
+                workPump(an+10,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 60 and an < 90")
+                vibrateCrucifixes(2)
+                workPump(an+100,DURATION_PUMP, FREQ, an)
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 60 and an < 90")
+                workPump(an*2,DURATION_PUMP, FREQ, an)
+                vibrateBoxes(1)
+            elif di < OK:
+                print("an >= 60 and an < 90")
+                workPump(an*2,DURATION_PUMP, FREQ, an)
+                vibrateRoses(2)
+            elif  di < FAR  and  di > OK:
+                print("an >= 60 and an < 90")
+            elif  di < VERY_FAR  and  di > FAR:
+                workPump(an*3,DURATION_PUMP, FREQ, an)
+                pulseEverything()
+            #for i in range(0 ,10):
+            #	actuateServoFromNum(i, servo_min)
+            #	time.sleep(0.1)
+            #	actuateServoFromNum(i, servo_max))
+            finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 90 and an < 120:
+            if DEBUG_MODE:
+                print(" 90 - 120 " )
+                workPump(an+100,DURATION_PUMP, FREQ, an)
+            if  di < VERY_CLOSE:
+                print(">= 90 and an < 120" )
+                workPump(an+320,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 60 and an < 90")
+                workPump(an+220,DURATION_PUMP, FREQ, an)
+                doNorthEast(10)
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print(">= 90 and an < 120" )
+                doNorthEast(5)
+                workPump(an+120,DURATION_PUMP, FREQ, an)
+            elif di < OK:
+                print(">= 90 and an < 120" )
+                doNorthWest(4)
+                workPump(an+1,DURATION_PUMP, FREQ, an)
+            elif  di < FAR  and  di > OK:
+                print(">= 90 and an < 120" )
+                doNorthEast()
+            elif  di < VERY_FAR  and  di > FAR:
+                #stopEverything()
+                vibrateRoses(0)
+                vibrateBoxes()
+                workPump(an+200,DURATION_PUMP, FREQ, an)
+            finishedRoutineCleanUp()
+
+                doSouthWest()
+                vibrateCrucifixes()
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print(">= 120 and an < 150" )
+                doSouthEast()
+                doNorthEast()
+
+            elif di < OK:
+                print(">= 120 and an < 150" )
+                doSouthWest()
+                doNorthWest()
+            elif  di < FAR  and  di > OK:
+                print(">= 120 and an < 150" )
+            elif  di < VERY_FAR  and  di > FAR:
+                print(">= 120 and an < 150" )
+                stopEverything()
+                #stopEverything()
+                vibrateRoses(0)
+                vibrateDogPoos()
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+                #moveByGroupType(CRUCIFIXES, 2)
+            finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 150 and an < 180:
+            if DEBUG_MODE:
+                print(" 1500 - 180 " )
+                doSouthEast()
+            if  di < VERY_CLOSE:
+                vibrateRoses(0)
+                vibrateCrucifixes(5)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                vibrateCrucifixes(5)
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 150 and an < 180" )
+                workPump(an+40,DURATION_PUMP, FREQ, an)
+            elif di < OK:
+                print("an >= 150 and an < 180" )
+                doSouthEast()
+            elif  di < FAR  and  di > OK:
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+                doSouthEast()
+                print("an >= 150 and an < 180" )
+            elif  di < VERY_FAR  and  di > FAR:
+                print("an >= 150 and an < 180" )
+                workPump(0,DURATION_PUMP, FREQ, an)
+                finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 180 and an < 210:
+            if DEBUG_MODE:
+                print(" 180 - 210 " )
+            if  di < VERY_CLOSE:
+                stopEverything()
+                workPump(an+420,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print(">= 180 and an < 210" )
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print(">= 180 and an < 210" )
+                stopEverything()
+            elif di < OK:
+                print(">= 180 and an < 210" )
+                stopEverything()
+            elif  di < FAR  and  di > OK:
+                print(">= 180 and an < 210" )
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+            elif  di < VERY_FAR  and  di > FAR:
+                #stopEverything()
+                vibrateBulb(3)
+                stopOne(PUMP_WIRE_NO)
+                finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 210 and an < 240:
+            if DEBUG_MODE:
+                print(" 210 - 240 " )
+            if  di < VERY_CLOSE:
+                vibrateCrucifixes(1)
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                vibrateAnemones()
+                print("an >= 210 and an < 240" )
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                vibrateCrucifixes(0.1)
+                vibrateAnemones()
+                print("an >= 210 and an < 240" )
+            elif di < OK:
+                vibrateAnemones()
+                print("an >= 210 and an < 240" )
+            elif  di < FAR  and  di > OK:
+                print("an >= 210 and an < 240" )
+            elif  di < VERY_FAR  and  di > FAR:
+                doNorthWest()
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+                finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 240 and an < 270:
+            if  di < VERY_CLOSE:
+                workPump(an+120,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 240 and an < 270" )
+                vibrateAnemones()
+                vibrateBoxes()
+                vibrateCrucifixes()
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 240 and an < 270" )
+            elif di < OK:
+                print("an >= 240 and an < 270" )
+                vibrateAnemones()
+                vibrateBoxes()
+            elif  di < FAR  and  di > OK:
+                print("an >= 240 and an < 270" )
+                vibrateBoxes(1)
+            elif  di < VERY_FAR  and  di > FAR:
+
+                stopContinuousServos()
+                doNorthEast()
+                stopOne(PUMP_WIRE_NO)
+                finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 270 and an < 300:
+            if  di < VERY_CLOSE:
+                workPump(an+20,DURATION_PUMP, FREQ, an)
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 270 and an < 300" )
+                vibrateDogPoos()
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 270 and an < 300" )
+                vibrateDogPoos()
+            elif di < OK:
+                print("an >= 270 and an < 300" )
+                vibrateBoxes()
+            elif  di < FAR  and  di > OK:
+                print("an >= 270 and an < 300" )
+            elif  di < VERY_FAR  and  di > FAR:
+                stopEverything()
+                doSouthEast()
+                stopOne(PUMP_WIRE_NO)
+                #workPump(di+2000, DURATION_PUMP, FREQ,INTENSITY)
+                #time.sleep(26)
+                finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 300 and an < 330:
+            if DEBUG_MODE:
+                print(" 300 - 330 " )
+                vibrateRoses()
+            if  di < VERY_CLOSE:
+                print("an >= 300 and an < 330" )
+                vibrateCrucifixes()
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 300 and an < 330" )
+                doSouthWest()
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 300 and an < 330" )
+                vibrateCrucifixes()
+                vibrateRoses()
+            elif di < OK:
+                print("an >= 300 and an < 330" )
+                doSouthEast()
+            elif  di < FAR  and  di > OK:
+                print("an >= 300 and an < 330" )
+                workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
+            elif  di < VERY_FAR  and  di > FAR:
+                stopContinuousServos()
+                doSouthWest()
+                stopOne(PUMP_WIRE_NO)
+            #workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
+            #time.sleep(20)
+            finishedRoutineCleanUp()
+
+        elif di < DISTANCE_MAX_SENSED and an >= 330 and an < 360:
+            if DEBUG_MODE:
+                print("30 - 360 " )
+                doNorthWest()
+            if  di < VERY_CLOSE:
+                print("an >= 300 and an < 330" )
+                vibrateAnemones()
+                vibrateBoxes()
+                vibrateRoses()
+            elif  di < CLOSE  and  di > VERY_CLOSE:
+                print("an >= 300 and an < 330" )
+                vibrateAnemones()
+                vibrateBoxes()
+            elif  di < VERY_NEAR  and  di > CLOSE:
+                print("an >= 300 and an < 330" )
+                vibrateAnemones()
+
+            elif di < OK:
+                print("an >= 300 and an < 330" )
+                workPump(di+200,DURATION_PUMP, FREQ,INTENSITY)
+            elif  di < FAR  and  di > OK:
+                print("an >= 300 and an < 330" )
+            elif  di < VERY_FAR  and  di > FAR:
+                stopContinuousServos()
+                vibrateRoses(0)
+                vibrateCrucifixes(1)
+
+                stopOne(PUMP_WIRE_NO)
+            finishedRoutineCleanUp()
+
+
+    except Exception as e : print(e)
+
+
 def timer():
     try:
         TIME_INTERVAL = 2
@@ -1214,21 +1571,13 @@ def timer():
         for j in threads:
             j.join()
     except Exception as e: print(e)
-    
+
 
 background_thread = Thread(target=timer, args=())
 background_thread.start()
 
 try:
     if LIDAR_RECEIVE:
-        #
-        # pick up the OSC messages coming in
-        #
-        #dieat = time.time()
-        #print(dieat)
-        #print ("**** " , int(dieat)+5.0 - int(time.time()))
-    
-        
         parser = argparse.ArgumentParser()
         parser.add_argument("--ip",
           default=IP, help="The ip to listen on")
@@ -1242,12 +1591,11 @@ try:
 
         server = osc_server.ThreadingOSCUDPServer(
           (args.ip, args.port), dispatcher)
-        
 
         if DEBUG_MODE:
             print("Serving on {}".format(server.server_address))
         server.serve_forever()
-        
+
     else:
 
         '''
@@ -1268,63 +1616,10 @@ try:
 
         # No Lidar here. Used in testing...
         #for i in range (1, 7):
-            #choregraphyActioByTypeOfObject(i, 0.1, servo_min)
-            #time.sleep(1)
-            #choregraphyActioByTypeOfObject(i, 0.1, servo_max)
-        #stopEverything()
-        
-        #choregraphyActioByTypeOfObject(1, 2, servo_min)
-        #num =  48
-        #print(num)
-        #pwm4.set_pwm_freq(60)
         while True:
-            testx(31)
-            ##power, duration, freq, intensity
-            #for i in range (1000, 2000,250): 
-                #workPump(i,2.2,1,1000)
-                
-                #if i == 1000:
-                    #workPump(0,2.2,1,1000)
-                    #time.sleep(2)
-                    #workPump(1,2.2,1,1000)
-            #vibrateDogPoos(1)    
-            #vibrateRoses(1)
-            #vibrateCrucifixes(0.2)
-            #actuateServoFromNum(47, 170)
-            #time.sleep(2)
-            #actuateServoFromNum(47, 550)
-            #time.sleep(2)
-            #actuateServoFromNum(64, 600)
-            #time.sleep(2)
-            #actuateServoFromNum(64, 0)
-            #time.sleep(2)
-            #pulseEverything()
-            #pwm3.set_pwm(15, 0, 175)
-            #time.sleep(2)
-            #pwm3.set_pwm(15, 0, 550)
-            #time.sleep(2)
-		##	doNorthEast()
-		#	doSouthWest()
-		#	doSouthEast()
-			#stopContinuousServos()
-            
-            #pulseEverything()
-		#while True:
-			#pulseOneServo(1, 1.5)
-			#stopOne(46)
-			#stopEverything()
-
-
-        #stopEverythingWithDisplay()
-
+            offlineRoutine(random.randint(0,360),random.randint(1,2000))
+            time.sleep(10)
 
 except KeyboardInterrupt:
         stopEverything()
         print("Ctl C pressed - ending program")
-#except Exception: 
-#    os._exit(1)
-
-#if __name__ == '__main__':
-#	main()
-
-

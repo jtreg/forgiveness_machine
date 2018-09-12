@@ -1,7 +1,5 @@
 #!/bin/bash
-# James Tregaskis August 2018
-# Part of the installation for final year project
-#
+# This stops the display_servos.py script, also stops processing sketch as well
 
 P1=$!
 ps -e | awk '$4~/java/{print $1}' | xargs kill
